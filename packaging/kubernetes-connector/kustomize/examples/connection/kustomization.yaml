@@ -1,0 +1,33 @@
+# One connection's overlay. Copy this directory, set AIENT_CONNECTION_ID to your connection's ID, pin `resources` to a
+# commit of github.com/aient-ai/helm-charts, and uncomment the parts you declared when you attached the cluster.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+- ../../base
+# From the public repository, pinned to a commit (tags can move):
+# - https://github.com/aient-ai/helm-charts//kustomize/kubernetes-connector/base?ref=<commit>
+configMapGenerator:
+- name: aient-connection
+  namespace: aient
+  behavior: merge
+  options:
+    disableNameSuffixHash: true
+  literals:
+  - AIENT_CONNECTION_ID=kconn_0123456789abcdef0123456789abcdef
+components:
+# - ../../components/without-logs          # the viewer then cannot read pod logs
+# - ../../components/extra-api-groups      # and the patch below
+# - ../../components/cilium-egress
+# - ../../components/namespace-scoped      # and the RoleBindings below; list it after extra-api-groups
+- ../../components/connection              # always last
+# patches:
+# - target: {kind: ClusterRole, name: aient-kconn-.*-viewer-extra}
+#   patch: |-
+#     - op: replace
+#       path: /rules
+#       value:
+#       - apiGroups: [cert-manager.io, argoproj.io]
+#         resources: ["*"]
+#         verbs: [get, list, watch]
+# With namespace-scoped, one RoleBinding per namespace and viewer role (components/connection renames them):
+# - namespace-rolebindings.yaml

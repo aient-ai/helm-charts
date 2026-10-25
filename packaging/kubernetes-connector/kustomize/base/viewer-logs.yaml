@@ -1,0 +1,23 @@
+# Pod logs (pods/log only) as their own role, bound like the core role: as designed, the viewer reads logs in every
+# namespace it is bound in (Henrik, 2026-10-24). components/without-logs removes both objects.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: aient-kconn-00000000000000000000000000000000-viewer-logs
+rules:
+- apiGroups: [""]
+  resources: [pods/log]
+  verbs: [get, list, watch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: aient-kconn-00000000000000000000000000000000-viewer-logs
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: aient-kconn-00000000000000000000000000000000-viewer-logs
+subjects:
+- kind: ServiceAccount
+  name: aient-kconn-00000000000000000000000000000000
+  namespace: aient

@@ -1,0 +1,13 @@
+# Removes every cluster-wide binding of the viewer roles. Your overlay then grants them in chosen namespaces with
+# RoleBindings (examples/connection shows them). List this after extra-api-groups, so it also removes its binding.
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: Component
+patches:
+- target:
+    kind: ClusterRoleBinding
+  patch: |-
+    $patch: delete
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRoleBinding
+    metadata:
+      name: any

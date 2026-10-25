@@ -1,0 +1,16 @@
+# Grants the core viewer role in one namespace. Repeat per namespace, and per role you install (-viewer-logs unless
+# you removed it, -viewer-extra if you added it). Keep the placeholder names: components/connection replaces the
+# hex with your connection's.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: aient-kconn-00000000000000000000000000000000-viewer
+  namespace: payments
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: aient-kconn-00000000000000000000000000000000-viewer
+subjects:
+- kind: ServiceAccount
+  name: aient-kconn-00000000000000000000000000000000
+  namespace: aient

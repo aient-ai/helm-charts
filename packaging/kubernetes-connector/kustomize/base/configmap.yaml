@@ -1,0 +1,9 @@
+# The connection's values. Your overlay sets AIENT_CONNECTION_ID (and AIENT_BROKER_URL only for a private broker);
+# components/connection copies the ID into every per-connection name.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: aient-connection
+data:
+  AIENT_BROKER_URL: wss://kube-broker.aient.ai
+  AIENT_CONNECTION_ID: kconn_00000000000000000000000000000000

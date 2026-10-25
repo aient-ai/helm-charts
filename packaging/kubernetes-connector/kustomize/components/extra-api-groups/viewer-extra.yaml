@@ -1,0 +1,18 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: aient-kconn-00000000000000000000000000000000-viewer-extra
+rules: []
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: aient-kconn-00000000000000000000000000000000-viewer-extra
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: aient-kconn-00000000000000000000000000000000-viewer-extra
+subjects:
+- kind: ServiceAccount
+  name: aient-kconn-00000000000000000000000000000000
+  namespace: aient

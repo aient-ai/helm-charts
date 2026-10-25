@@ -1,0 +1,87 @@
+# Decisions for the aient-viewer role. generate.mjs combines them with every CustomResourceDefinition in the
+# repository into base/aient-viewer.yaml, and refuses (as does tests/quality/k8s-identity-contract.test.mjs) when a
+# CRD group defined in the repository is in neither grantedGroups nor excludedGroups. A granted group is read whole
+# unless one of its resources is denied, in which case its other resources are listed. Every exclusion and denial
+# states why.
+
+# Kubernetes built-in API groups, granted whole. The core group is listed resource by resource in generate.mjs.
+builtinGroups:
+- admissionregistration.k8s.io
+- apiextensions.k8s.io
+- apiregistration.k8s.io
+- apps
+- autoscaling
+- batch
+- certificates.k8s.io
+- coordination.k8s.io
+- discovery.k8s.io
+- events.k8s.io
+- flowcontrol.apiserver.k8s.io
+- metrics.k8s.io
+- networking.k8s.io
+- node.k8s.io
+- policy
+- rbac.authorization.k8s.io
+- resource.k8s.io
+- scheduling.k8s.io
+- storage.k8s.io
+
+# Operator API groups defined by CRDs in this repository, read whole unless a resource is denied below.
+#
+# Secret-material review, 2026-10-20. aient-viewer/scan-secret-fields.mjs, run as admin, read every live object of
+# these groups (and k3s addons and helmcharts): 107 resources, 0 unreadable. It flags, by field path and never by
+# value:
+#   - PEM private keys, AWS, GitHub, Slack and Stripe keys, JWTs, passwords in URL userinfo, `password=` and
+#     `token:` assignments;
+#   - credential-named keys holding a literal rather than a Ref or name;
+#   - credential-named env entries with literal values.
+# All 11 findings were references, none a credential:
+#   - actions.github.com githubConfigSecret is a Secret name;
+#   - argocd-image-updater pullSecret is a Secret reference;
+#   - postgresql.cnpg.io status.certificates.*Secret are Secret names, and status.secretsResourceVersion.* holds
+#     resourceVersions;
+#   - acme.cert-manager.io order challenge tokens are public by design (served for HTTP-01, published for DNS-01).
+# ClickHouse installations and keepers, Argo CD applications, Strimzi, MinIO, Restate, OpenTelemetry, Cilium, SPIRE
+# and Tailscale were clean. Rerun the scan when granting a new group.
+grantedGroups:
+- acme.cert-manager.io
+- actions.github.com
+- aquasecurity.github.io
+- argocd-image-updater.argoproj.io
+- argoproj.io
+- barmancloud.cnpg.io
+- cert-manager.io
+- clickhouse-keeper.altinity.com
+- clickhouse.altinity.com
+- core.strimzi.io
+- gateway.envoyproxy.io
+- gateway.networking.k8s.io
+- gateway.networking.x-k8s.io
+- job.min.io
+- kafka.strimzi.io
+- longhorn.io
+- minio.min.io
+- opentelemetry.io
+- postgresql.cnpg.io
+- restate.dev
+- spire.spiffe.io
+- sts.min.io
+- tailscale.com
+- upgrade.cattle.io
+
+# Groups the cluster serves that no manifest in this repository defines.
+liveOnlyGroups:
+  cilium.io:
+    reason: created by the Cilium agent and operator, installed by infra/cilium/Taskfile.yaml from the Helm chart
+    resources: "*"
+  k3s.cattle.io:
+    reason: built into k3s (Addon and ETCDSnapshotFile); the 2026-10-20 scan found no secret material in either
+    resources: "*"
+
+excludedGroups:
+  helm.cattle.io: a k3s HelmChart carries chart values inline in valuesContent, which can hold credentials; little diagnostic value
+  authentication.k8s.io: create-only review APIs; nothing to read
+  authorization.k8s.io: create-only review APIs; nothing to read
+
+deniedResources:
+  aquasecurity.github.io/exposedsecretreports: each report quotes the secrets Trivy found in an image

@@ -1,0 +1,6 @@
+# Adds read access to more API groups (your operators' CRDs) as their own role. The role is empty until your overlay
+# sets its rules with a patch; examples/connection shows one.
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: Component
+resources:
+- viewer-extra.yaml

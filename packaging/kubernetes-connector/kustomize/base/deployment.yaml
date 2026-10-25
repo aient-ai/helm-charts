@@ -1,0 +1,63 @@
+# One replica: the broker holds one session per connection, and a second connector would replace it.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aient-kube-connector
+  labels:
+    app.kubernetes.io/name: aient-kube-connector
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: aient-kube-connector
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: aient-kube-connector
+      annotations:
+        # sha256 of AIENT_BROKER_URL, so a new broker URL restarts the connector, which reads it at start. Kustomize
+        # cannot hash: if you change the URL, change this to its sha256 too (Helm computes it).
+        aient.ai/broker-url: 9eeba93426b91d18d81ed14e49f3579b9c2624b5e8cbf194ebaf60f550ba702e
+    spec:
+      serviceAccountName: aient-connector
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        # The key Secret is mounted group-readable for this group, and readable by nobody else.
+        fsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: connector
+        image: aient-kube-connector
+        envFrom:
+        - configMapRef:
+            name: aient-connection
+        args:
+        - --key-file=/var/run/aient/connector.key
+        - --viewer=aient-kconn-00000000000000000000000000000000
+        - --anchor=aient-kconn-00000000000000000000000000000000-anchor
+        resources:
+          requests:
+            cpu: 100m
+            memory: 64Mi
+          limits:
+            cpu: 100m
+            memory: 64Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop: [ALL]
+        volumeMounts:
+        - name: key
+          mountPath: /var/run/aient
+          readOnly: true
+      volumes:
+      - name: key
+        secret:
+          secretName: aient-connector-key
+          defaultMode: 0440

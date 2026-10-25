@@ -1,0 +1,29 @@
+{{- $viewer := include "kubernetes-connector.viewer" . -}}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: aient-connector-mint
+  namespace: aient
+  labels:
+    {{- include "kubernetes-connector.labels" . | nindent 4 }}
+rules:
+- apiGroups: [""]
+  resources: [serviceaccounts/token]
+  resourceNames: [{{ $viewer }}]
+  verbs: [create]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: aient-connector-mint
+  namespace: aient
+  labels:
+    {{- include "kubernetes-connector.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: aient-connector-mint
+subjects:
+- kind: ServiceAccount
+  name: aient-connector
+  namespace: aient

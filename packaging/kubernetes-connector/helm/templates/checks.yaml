@@ -1,0 +1,3 @@
+{{- if not .Values.connector.enabled }}
+{{- fail "connector.enabled=false (the direct path) is not available yet" }}
+{{- end }}

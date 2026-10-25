@@ -1,0 +1,50 @@
+# The same objects as the Kustomize base and components in ../kustomize; a contract test keeps them equal
+# (tests/quality/kubernetes-connector-packaging-contract.test.mjs). Everything is installed in namespace aient.
+
+connection:
+  # The connection Aient issued when you attached the cluster: kconn_ and 32 hexadecimal digits. Required.
+  id: ""
+  # Aient's connector broker. Change it only if Aient asks you to.
+  brokerUrl: wss://kube-broker.aient.ai
+
+connector:
+  # false is reserved for the direct path, where Aient calls your API server itself; it is not available yet.
+  enabled: true
+  # Referenced by digest only.
+  image:
+    repository: ghcr.io/aient-ai/kubernetes-connector
+    tag: 0.1.0
+    digest: sha256:0b95e2e8c68a63f348be11a870dadb222198057c21cbb5494884494f3bf8f6a3
+
+viewer:
+  # The viewer's core reads: Kubernetes' built-in resources without Secrets, and the built-in API groups whole, with
+  # all their resources (Henrik, 2026-10-24). Declare these rules, and those of the logs and extra-groups roles when
+  # enabled, when you attach the cluster. Verbs are only get, list and watch.
+  rules:
+  - apiGroups: [""]
+    resources: [componentstatuses, configmaps, endpoints, events, limitranges, namespaces, namespaces/status, nodes,
+      nodes/status, persistentvolumeclaims, persistentvolumeclaims/status, persistentvolumes, persistentvolumes/status,
+      pods, pods/status, podtemplates, replicationcontrollers, replicationcontrollers/scale,
+      replicationcontrollers/status, resourcequotas, resourcequotas/status, serviceaccounts, services, services/status]
+    verbs: [get, list, watch]
+  - apiGroups: [admissionregistration.k8s.io, apiextensions.k8s.io, apiregistration.k8s.io, apps, autoscaling, batch,
+      certificates.k8s.io, coordination.k8s.io, discovery.k8s.io, events.k8s.io, flowcontrol.apiserver.k8s.io,
+      metrics.k8s.io, networking.k8s.io, node.k8s.io, policy, rbac.authorization.k8s.io, resource.k8s.io,
+      scheduling.k8s.io, storage.k8s.io]
+    resources: ["*"]
+    verbs: [get, list, watch]
+
+logs:
+  # Pod logs (pods/log) as a separate role, read in every namespace the viewer is bound in (Henrik, 2026-10-24).
+  enabled: true
+
+# More API groups to read whole, such as your operators' CRD groups, as a separate role.
+extraApiGroups: []
+
+# Empty: the viewer roles are bound cluster-wide. Otherwise they are bound only in these namespaces.
+namespaces: []
+
+networkPolicy:
+  cilium:
+    # On Cilium, allow HTTPS only to the broker's host name and the API server, instead of to any address.
+    enabled: false

@@ -1,0 +1,36 @@
+{{- $viewer := include "kubernetes-connector.viewer" . -}}
+{{- range $role := include "kubernetes-connector.viewerRoles" . | fromJsonArray }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ $viewer }}-{{ $role.suffix }}
+  labels:
+    {{- include "kubernetes-connector.labels" $ | nindent 4 }}
+rules:
+{{- toYaml $role.rules | nindent 0 }}
+{{- range $namespace := $.Values.namespaces | default (list "") }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+{{- if $namespace }}
+kind: RoleBinding
+metadata:
+  name: {{ $viewer }}-{{ $role.suffix }}
+  namespace: {{ $namespace }}
+{{- else }}
+kind: ClusterRoleBinding
+metadata:
+  name: {{ $viewer }}-{{ $role.suffix }}
+{{- end }}
+  labels:
+    {{- include "kubernetes-connector.labels" $ | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ $viewer }}-{{ $role.suffix }}
+subjects:
+- kind: ServiceAccount
+  name: {{ $viewer }}
+  namespace: aient
+{{- end }}
+{{- end }}
