@@ -59,7 +59,6 @@ grantedGroups:
 - gateway.networking.x-k8s.io
 - job.min.io
 - kafka.strimzi.io
-- longhorn.io
 - minio.min.io
 - opentelemetry.io
 - postgresql.cnpg.io
