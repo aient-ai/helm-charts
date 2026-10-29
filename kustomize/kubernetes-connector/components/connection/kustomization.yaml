@@ -1,0 +1,40 @@
+# Copies the connection ID from the aient-connection ConfigMap into every per-connection name: the viewer
+# ServiceAccount aient-kconn-<hex>, its anchor Secret, the viewer roles and bindings, the minter Role's resourceNames
+# and the connector's flags. List it LAST in your overlay's components, so it also renames what the other components
+# add. Aient expects exactly these names: the attach read-back compares the viewer's username with them.
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: Component
+replacements:
+- source:
+    kind: ConfigMap
+    name: aient-connection
+    fieldPath: data.AIENT_CONNECTION_ID
+    options: {delimiter: _, index: 1}
+  targets:
+  # aient-kconn-<hex>[-suffix]: the third dash-separated field.
+  - select: {kind: ServiceAccount, name: aient-kconn-00000000000000000000000000000000}
+    fieldPaths: [metadata.name]
+    options: {delimiter: '-', index: 2}
+  - select: {kind: Secret, name: aient-kconn-00000000000000000000000000000000-anchor}
+    fieldPaths: [metadata.name]
+    options: {delimiter: '-', index: 2}
+  - select: {kind: Role, name: aient-connector-mint}
+    fieldPaths: [rules.0.resourceNames.0]
+    options: {delimiter: '-', index: 2}
+  - select: {kind: ClusterRole}
+    fieldPaths: [metadata.name]
+    options: {delimiter: '-', index: 2}
+  - select: {kind: ClusterRoleBinding}
+    fieldPaths: [metadata.name, roleRef.name, subjects.0.name]
+    options: {delimiter: '-', index: 2}
+  - select: {kind: RoleBinding}
+    reject:
+    - name: aient-connector-mint
+    fieldPaths: [metadata.name, roleRef.name, subjects.0.name]
+    options: {delimiter: '-', index: 2}
+  # --viewer=aient-kconn-<hex> and --anchor=aient-kconn-<hex>-anchor: the fifth.
+  - select: {kind: Deployment, name: aient-kube-connector}
+    fieldPaths:
+    - spec.template.spec.containers.[name=connector].args.1
+    - spec.template.spec.containers.[name=connector].args.2
+    options: {delimiter: '-', index: 4}

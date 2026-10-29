@@ -1,0 +1,23 @@
+# Removes the -viewer-logs role and its cluster-wide binding: the viewer can no longer read pod logs. Without this
+# component the viewer reads pods/log in every namespace it is bound in (Henrik, 2026-10-24).
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: Component
+patches:
+- target:
+    kind: ClusterRole
+    name: aient-kconn-.*-viewer-logs
+  patch: |-
+    $patch: delete
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRole
+    metadata:
+      name: any
+- target:
+    kind: ClusterRoleBinding
+    name: aient-kconn-.*-viewer-logs
+  patch: |-
+    $patch: delete
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRoleBinding
+    metadata:
+      name: any

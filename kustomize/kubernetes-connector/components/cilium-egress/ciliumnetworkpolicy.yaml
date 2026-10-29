@@ -1,0 +1,40 @@
+# No ingress. Egress only to cluster DNS, the broker's host name on 443 and the API server on 443 or 6443.
+# toFQDNs works only for names the pod resolved through Cilium's DNS proxy, so the DNS rule sends lookups through it.
+# It admits any name, because the resolver also tries the pod's search domains first; only connections are limited.
+# kube-apiserver is the entity Cilium gives the API server's addresses, including k3s servers on the host network.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: aient-kube-connector
+  namespace: aient
+spec:
+  endpointSelector:
+    matchLabels:
+      k8s:app.kubernetes.io/name: aient-kube-connector
+  ingressDeny:
+  - fromEntities: [all]
+  egress:
+  - toEndpoints:
+    - matchLabels:
+        k8s:io.kubernetes.pod.namespace: kube-system
+        k8s:k8s-app: kube-dns
+    toPorts:
+    - ports:
+      - port: "53"
+        protocol: ANY
+      rules:
+        dns:
+        - matchPattern: "*"
+  - toFQDNs:
+    - matchName: kube-broker.aient.ai
+    toPorts:
+    - ports:
+      - port: "443"
+        protocol: TCP
+  - toEntities: [kube-apiserver]
+    toPorts:
+    - ports:
+      - port: "443"
+        protocol: TCP
+      - port: "6443"
+        protocol: TCP

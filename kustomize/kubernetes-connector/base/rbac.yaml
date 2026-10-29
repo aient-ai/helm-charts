@@ -1,0 +1,22 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: aient-connector-mint
+rules:
+- apiGroups: [""]
+  resources: [serviceaccounts/token]
+  resourceNames: [aient-kconn-00000000000000000000000000000000]
+  verbs: [create]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: aient-connector-mint
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: aient-connector-mint
+subjects:
+- kind: ServiceAccount
+  name: aient-connector
+  namespace: aient

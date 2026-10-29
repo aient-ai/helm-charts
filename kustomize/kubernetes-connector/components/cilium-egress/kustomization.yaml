@@ -1,0 +1,24 @@
+# For clusters that run Cilium: a CiliumNetworkPolicy that allows HTTPS only to the broker's host name and to the
+# Kubernetes API server. The generic NetworkPolicy, which must allow HTTPS to any address, keeps its name but loses its
+# egress rules: it then allows nothing, and Cilium enforces the union of both policies' allowances. Keeping the object
+# is what lets `kubectl apply` narrow an installation that has the generic policy; apply does not delete an object
+# that left the manifest, so a deleted policy would stay live and keep allowing any address.
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: Component
+resources:
+- ciliumnetworkpolicy.yaml
+patches:
+- target: {kind: NetworkPolicy, name: aient-kube-connector}
+  patch: |-
+    - op: remove
+      path: /spec/egress
+replacements:
+# wss://<host>: the third slash-separated field.
+- source:
+    kind: ConfigMap
+    name: aient-connection
+    fieldPath: data.AIENT_BROKER_URL
+    options: {delimiter: /, index: 2}
+  targets:
+  - select: {kind: CiliumNetworkPolicy, name: aient-kube-connector}
+    fieldPaths: [spec.egress.1.toFQDNs.0.matchName]

@@ -1,0 +1,78 @@
+{{- $viewer := include "kubernetes-connector.viewer" . -}}
+{{- $image := .Values.connector.image -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: aient-connection
+  namespace: aient
+  labels:
+    {{- include "kubernetes-connector.labels" . | nindent 4 }}
+data:
+  AIENT_BROKER_URL: {{ .Values.connection.brokerUrl }}
+  AIENT_CONNECTION_ID: {{ .Values.connection.id }}
+---
+# One replica: the broker holds one session per connection, and a second connector would replace it.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aient-kube-connector
+  namespace: aient
+  labels:
+    app.kubernetes.io/name: aient-kube-connector
+    {{- include "kubernetes-connector.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: aient-kube-connector
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: aient-kube-connector
+      annotations:
+        # A new broker URL restarts the connector, which reads it at start.
+        aient.ai/broker-url: {{ .Values.connection.brokerUrl | sha256sum }}
+    spec:
+      serviceAccountName: aient-connector
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        # The key Secret is mounted group-readable for this group, and readable by nobody else.
+        fsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: connector
+        image: {{ printf "%s:%s@%s" $image.repository $image.tag $image.digest }}
+        envFrom:
+        - configMapRef:
+            name: aient-connection
+        args:
+        - --key-file=/var/run/aient/connector.key
+        - --viewer={{ $viewer }}
+        - --anchor={{ $viewer }}-anchor
+        resources:
+          requests:
+            cpu: 100m
+            memory: 64Mi
+          limits:
+            cpu: 100m
+            memory: 64Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop: [ALL]
+        volumeMounts:
+        - name: key
+          mountPath: /var/run/aient
+          readOnly: true
+      volumes:
+      # Created by the install command, never by this chart: the connection's Ed25519 private key.
+      - name: key
+        secret:
+          secretName: aient-connector-key
+          defaultMode: 0440
