@@ -78,6 +78,7 @@ liveOnlyGroups:
     resources: "*"
 
 excludedGroups:
+  sandbox.aient.ai: Sandbox create.envVars retains customer credentials; native owners are not shared diagnostic data
   helm.cattle.io: a k3s HelmChart carries chart values inline in valuesContent, which can hold credentials; little diagnostic value
   authentication.k8s.io: create-only review APIs; nothing to read
   authorization.k8s.io: create-only review APIs; nothing to read
