@@ -9,9 +9,8 @@ export BASH_COMPAT=50
 dir=${1:?usage: install-tools.sh <dir> <tool>...}
 shift
 mkdir -p "$dir"
-download() { # url sha256 file
-  curl --proto '=https' --tlsv1.2 --fail --silent --show-error --location --retry 3 "$1" --output "$3"
-  printf '%s  %s\n' "$2" "$3" | sha256sum --check --strict --quiet -
+download() { # url sha256 file: by its SHA-256, through the pinned-download cache (pinned-download.sh beside this file)
+  bash "$(dirname "${BASH_SOURCE[0]}")/pinned-download.sh" "$2" "$1" "$3"
 }
 for tool in "$@"; do
   archive="$dir/$tool.download"
