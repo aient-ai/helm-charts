@@ -2,6 +2,21 @@ apiVersion: v1
 entries:
   kubernetes-connector:
   - apiVersion: v2
+    appVersion: 0.1.2
+    created: "2026-11-17T17:34:03.594727306Z"
+    description: Lets Aient's agents read your Kubernetes cluster through an outbound-only
+      connector and a read-only viewer.
+    digest: 526f29562552ff07e370efaa587d99b12e468511071d27269df95ec84eaa34a2
+    home: https://docs.aient.ai/ai-tools/kubernetes-connections
+    kubeVersion: '>=1.26.0-0'
+    name: kubernetes-connector
+    sources:
+    - https://github.com/aient-ai/helm-charts
+    type: application
+    urls:
+    - https://aient-ai.github.io/helm-charts/kubernetes-connector-0.1.2.tgz
+    version: 0.1.2
+  - apiVersion: v2
     appVersion: 0.1.1
     created: "2026-11-17T10:42:06.584163668Z"
     description: Lets Aient's agents read your Kubernetes cluster through an outbound-only
@@ -31,4 +46,4 @@ entries:
     urls:
     - https://aient-ai.github.io/helm-charts/kubernetes-connector-0.1.0.tgz
     version: 0.1.0
-generated: "2026-11-17T10:42:06.583737362Z"
+generated: "2026-11-17T17:34:03.594258393Z"
