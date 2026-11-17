@@ -19,5 +19,5 @@ resources:
 images:
 - name: aient-kube-connector
   newName: ghcr.io/aient-ai/kubernetes-connector
-  newTag: 0.1.0
-  digest: sha256:0b95e2e8c68a63f348be11a870dadb222198057c21cbb5494884494f3bf8f6a3
+  newTag: 0.1.1
+  digest: sha256:f61098a505d91f02850f505e1cd1d7b5dffcfe58ccb913cfe4a4686dc85829ad
