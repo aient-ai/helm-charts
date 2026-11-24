@@ -15,6 +15,7 @@ import { coreResources, loadPolicy } from '../../infra/k8s-identity/aient-viewer
 import { helm, requireHelm } from './helpers/require-helm.mjs'
 import { removeTempDirectorySync } from './helpers/temp-directory-cleanup.mjs'
 import { run } from './run-bounded.mjs'
+import { kustomizeRun } from './helpers/kustomize-render-cache.mjs'
 
 const ROOT = realpathSync(resolve('packaging/kubernetes-connector'))
 const CONNECTION_ID = 'kconn_0123456789abcdef0123456789abcdef'
@@ -97,7 +98,7 @@ async function kustomizeBuild(t, variant) {
       configMapGenerator: [{ name: 'aient-connection', namespace: 'aient', behavior: 'merge',
         options: { disableNameSuffixHash: true }, literals: [`AIENT_CONNECTION_ID=${CONNECTION_ID}`] }],
     }))
-    const result = await run(t, 'kustomize', ['build', dir])
+    const result = await kustomizeRun(t, 'kustomize', ['build', dir])
     assert.equal(result.status, 0, result.stderr)
     return documents(result.stdout)
   } finally {

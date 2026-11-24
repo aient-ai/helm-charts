@@ -72,7 +72,11 @@ export function run(t, file, args = [], options = {}) {
 // Like execFileSync: resolves stdout, and rejects with an error carrying status, signal, stdout
 // and stderr when the program fails or exits non-zero.
 export async function runOk(t, file, args = [], options = {}) {
-  const result = await run(t, file, args, options)
+  return succeeded(file, args, await run(t, file, args, options))
+}
+
+/** runOk's verdict on a `run` result: its stdout, or the error runOk throws. Shared by wrappers of `run`. */
+export function succeeded(file, args, result) {
   if (result.error || result.status !== 0) {
     const detail = result.error ? result.error.message : `exit ${result.status ?? result.signal}`
     const error = new Error(`${file} ${args.join(' ')}: ${detail}\n${result.stderr}`)
