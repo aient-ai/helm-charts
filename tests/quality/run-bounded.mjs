@@ -6,7 +6,8 @@
 // at a load average of 14 to 28 while their work took 5.03 s.
 //
 // Here the child gets the test's abort signal. When the runner times the test out or cancels it,
-// node:test aborts that signal and the child is killed. Nothing else bounds it, by design: where
+// node:test aborts that signal and the child is killed; a `detached: true` child leads its own
+// process group, and the whole group is killed. Nothing else bounds it, by design: where
 // the runner has no --test-timeout, the CI job's own limit does. A call that must assert on a
 // timeout of its own keeps spawnSync with an inline `// timeout-asserted: <why>` marker
 // (contract: bounded-spawn-contract.test.mjs).
@@ -41,6 +42,8 @@ export function run(t, file, args = [], options = {}) {
       return
     }
     let startError
+    const killGroup = () => { try { process.kill(-child.pid, 'SIGKILL') } catch {} }
+    if (spawnOptions.detached) signal.addEventListener('abort', killGroup, { once: true })
     child.stdout.on('data', chunk => stdout.push(chunk))
     child.stderr.on('data', chunk => stderr.push(chunk))
     child.stdin.on('error', () => {}) // a child that exits without reading its input
@@ -49,6 +52,7 @@ export function run(t, file, args = [], options = {}) {
       else startError = error
     })
     child.on('close', (status, exitSignal) => {
+      signal.removeEventListener('abort', killGroup)
       // Abort rejects the result before process exit. Lifecycle owners may separately await close.
       onClose?.({ pid: child.pid, status, signal: exitSignal })
       if (signal.aborted) return
