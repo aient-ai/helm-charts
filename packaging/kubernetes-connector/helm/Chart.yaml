@@ -2,8 +2,9 @@ apiVersion: v2
 name: kubernetes-connector
 description: Lets Aient's agents read your Kubernetes cluster through an outbound-only connector and a read-only viewer.
 type: application
-# The connector image is pinned by digest in values; appVersion is its version.
-version: 0.1.2
+# The connector image is pinned by digest in values; appVersion is its version. The chart version moves on its own when
+# only the chart changes (0.1.3: memory for the 0.1.x connector, PRB-45413).
+version: 0.1.3
 appVersion: "0.1.2"
 kubeVersion: ">=1.26.0-0"
 home: https://docs.aient.ai/ai-tools/kubernetes-connections

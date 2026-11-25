@@ -20,23 +20,51 @@ REMOTE=${HELM_CHARTS_REPO_URL:-ssh://git@ssh.github.com:443/aient-ai/helm-charts
 REPO=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
 # shellcheck source=packaging/release/release-git.sh
 source "$REPO/packaging/release/release-git.sh"
-# What the contract tests import outside packaging/; a missing one fails the test that runs them from the synced tree.
-SUPPORT=(
-  infra/k8s-identity/aient-viewer/generate.mjs
+# Files the contract tests read by path rather than import; a missing one fails the test that runs them from the
+# synced tree. The modules they import are found by following the imports (imported_modules), not listed here.
+DATA=(
   infra/k8s-identity/aient-viewer/policy.yaml
-  tests/quality/helpers/require-helm.mjs
-  tests/quality/helpers/temp-directory-cleanup.mjs
-  tests/quality/run-bounded.mjs
-  scripts/lib/directory-cleanup.mjs
 )
 
+# Prints each repository-relative module reachable from the given ones through static relative imports
+# (`from './x.mjs'`, `import '../y.mjs'`), the given ones included. A list kept by hand went stale when a contract
+# test gained a helper import, and the release ran without it.
+imported_modules() {
+  local -A seen=()
+  local queue=("$@") file spec segment
+  while ((${#queue[@]})); do
+    file=${queue[0]}
+    queue=("${queue[@]:1}")
+    [[ -z ${seen[$file]:-} ]] || continue
+    seen[$file]=1
+    [[ -f $REPO/$file ]] || { echo "sync-source: $file is imported but missing" >&2; return 1; }
+    echo "$file"
+    while IFS= read -r spec; do
+      local parts=() out=()
+      IFS=/ read -r -a parts <<<"$(dirname "$file")/$spec"
+      for segment in "${parts[@]}"; do
+        case $segment in
+          '' | .) ;;
+          ..) unset 'out[${#out[@]}-1]' ;;
+          *) out+=("$segment") ;;
+        esac
+      done
+      queue+=("$(IFS=/; echo "${out[*]}")")
+    done < <(grep -oE "(from|^import) +['\"]\.{1,2}/[^'\"]+['\"]" "$REPO/$file" | sed -E "s/^(from|import) +['\"]//; s/['\"]\$//")
+  done
+}
+
 head=$(git -C "$REPO" rev-parse HEAD)
-paths=(packaging/release "${SUPPORT[@]}")
+paths=(packaging/release "${DATA[@]}")
+tests=()
 for chart_file in "$REPO"/packaging/*/helm/Chart.yaml; do
   chart=$(basename "$(dirname "$(dirname "$chart_file")")")
-  paths+=("packaging/$chart/helm" "packaging/$chart/kustomize" "packaging/$chart/release.env"
-    "tests/quality/$chart-packaging-contract.test.mjs")
+  paths+=("packaging/$chart/helm" "packaging/$chart/kustomize" "packaging/$chart/release.env")
+  tests+=("tests/quality/$chart-packaging-contract.test.mjs")
 done
+modules=$(imported_modules "${tests[@]}")
+mapfile -t modules <<<"$modules"
+paths+=("${modules[@]}")
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
 

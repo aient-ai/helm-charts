@@ -40,13 +40,22 @@ spec:
         - --key-file=/var/run/aient/connector.key
         - --viewer=aient-kconn-00000000000000000000000000000000
         - --anchor=aient-kconn-00000000000000000000000000000000-anchor
+        # Connector 0.1.x buffers each answer (up to --max-body-bytes, 4 MiB) and decodes it whole to redact it, for up to
+        # 8 requests at once. Measured on 4 MiB lists: 89 MiB peak for one, 497 MiB with every slot busy and more queued;
+        # 64Mi was OOM-killed by a single kubectl get pods -A (PRB-45413). 0.2.0 streams and needs far less.
+        env:
+        # The Go collector works harder as the heap nears the limit instead of letting garbage reach it.
+        - name: GOMEMLIMIT
+          valueFrom:
+            resourceFieldRef:
+              resource: limits.memory
         resources:
           requests:
             cpu: 100m
-            memory: 64Mi
+            memory: 640Mi
           limits:
             cpu: 100m
-            memory: 64Mi
+            memory: 640Mi
         securityContext:
           allowPrivilegeEscalation: false
           readOnlyRootFilesystem: true
