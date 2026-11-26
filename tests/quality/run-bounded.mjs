@@ -10,7 +10,8 @@
 // process group, and the whole group is killed. Nothing else bounds it, by design: where
 // the runner has no --test-timeout, the CI job's own limit does. A call that must assert on a
 // timeout of its own keeps spawnSync with an inline `// timeout-asserted: <why>` marker
-// (contract: bounded-spawn-contract.test.mjs).
+// (contract: bounded-spawn-contract.test.mjs). A new sync call without one fails the ratchet
+// scripts/quality/unbounded-sync-spawn.mjs, unless it says why on its line: `// sync-child: <reason>`.
 //
 // Call these inside a test, not at module level or in a before hook: a hook's signal is not
 // aborted when the run times out (measured 2026-10-12).
